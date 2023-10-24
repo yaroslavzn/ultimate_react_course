@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import NavBar from './components/NavBar';
 import Main from './components/Main';
-import { tempMovieData, tempWatchedData } from './data/data';
 import Logo from './components/Logo';
 import SearchBar from './components/SearchBar';
 import SearchResult from './components/SearchResult';
@@ -9,30 +8,75 @@ import MoviesBox from './components/MoviesBox';
 import MovieList from './components/MovieList';
 import WatchedSummary from './components/WatchedSummary';
 import WatchedMovieList from './components/WatchedMovieList';
+import Loader from './components/Loader';
+import ErrorMessage from './components/ErrorMessage';
+import MovieDetails from './components/MovieDetails';
+import { useMovies } from './hooks/useMovies';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
+  const [watched, setWatched] = useLocalStorageState([], 'watched');
+  const [query, setQuery] = useState('dark knight');
+  const { movies, isLoading, error } = useMovies(query, () =>
+    toggleSelectedMovieHandler(null)
+  );
+  const [selectedId, setSelectedId] = useState(null);
+
+  function toggleSelectedMovieHandler(id) {
+    if (!id || id === selectedId) {
+      return setSelectedId(null);
+    }
+
+    setSelectedId(id);
+  }
+
+  function markMovieAsWatchedHandler(movie) {
+    setWatched((movies) => [...movies, movie]);
+  }
+
+  function removeFromWatchedHandler(id) {
+    setWatched((watched) => watched.filter((item) => item.imdbID !== id));
+  }
 
   return (
     <>
       <NavBar>
         <Logo />
 
-        <SearchBar />
+        <SearchBar query={query} setQuery={setQuery} />
 
         <SearchResult searchCount={movies.length} />
       </NavBar>
 
       <Main>
         <MoviesBox>
-          <MovieList movies={movies} />
+          {isLoading && <Loader />}
+          {error && <ErrorMessage message={error} />}
+          {!isLoading && !error && (
+            <MovieList
+              movies={movies}
+              onMovieSelect={toggleSelectedMovieHandler}
+            />
+          )}
         </MoviesBox>
 
         <MoviesBox>
-          <WatchedSummary watched={watched} />
+          {selectedId ? (
+            <MovieDetails
+              movieId={selectedId}
+              onBack={toggleSelectedMovieHandler}
+              onMarkWatched={markMovieAsWatchedHandler}
+            />
+          ) : (
+            <>
+              <WatchedSummary watched={watched} />
 
-          <WatchedMovieList watched={watched} />
+              <WatchedMovieList
+                watched={watched}
+                onRemoveFromWatched={removeFromWatchedHandler}
+              />
+            </>
+          )}
         </MoviesBox>
       </Main>
     </>
