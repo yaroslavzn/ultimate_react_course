@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useState } from 'react';
 import { BASE_API_URL } from '../hooks/useFetch';
 
 const CitiesContext = createContext(null);
@@ -9,11 +9,7 @@ const CitiesProvider = ({ children }) => {
   const [currentCity, setCurrentCity] = useState(null);
   const [addCityIsLoading, setAddCityIsLoading] = useState(false);
 
-  useEffect(() => {
-    getCities();
-  }, []);
-
-  const getCities = async () => {
+  const getCities = useCallback(async () => {
     setIsLoading(true);
 
     try {
@@ -25,7 +21,7 @@ const CitiesProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const addCity = async (newCity) => {
     setAddCityIsLoading(true);
@@ -73,6 +69,7 @@ const CitiesProvider = ({ children }) => {
         addCity,
         addCityIsLoading,
         deleteCity,
+        getCities,
       }}
     >
       {children}
